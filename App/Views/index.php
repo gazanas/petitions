@@ -105,7 +105,7 @@
 					            	<div class='col-12'>
 					                	<div class='row col-9'>
 					                  		<div class='col-11'>
-					                    		<h4><strong><a href='?pid=`+value.id+`'>`+value.title+`</a></strong></h4>
+					                    		<h4><strong><a href='petition/`+value.id+`'>`+value.title+`</a></strong></h4>
 					                  		</div>
 					                	</div>
 					                	<div class='row col-12'>
@@ -122,6 +122,8 @@
 					            </div>
 					            <hr>`);
 						});
+					}, error: function(xhr) {
+						alert(xhr.responseText);
 					}
 				});
 			});
@@ -140,6 +142,8 @@
 						} else {
 							location.reload();
 						}
+					}, error: function(xhr) {
+						alert(xhr.responseText);
 					}
 				});
 			});

@@ -8,7 +8,7 @@ class Bootstrap {
     
     public function __construct()
     {
-        date_default_timezone_set('Europe/Athens');
+        date_default_timezone_set(TIMEZONE);
     }
     
     /**

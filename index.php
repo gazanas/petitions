@@ -8,8 +8,9 @@ class Initialize
 {
     
     public function setup()
-    {        
-        (new Router())->route();
+    {     
+        require_once(__DIR__.'/App/Routes/Routes.php');
+        Router::execute();
     }
 }
 

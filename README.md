@@ -1,6 +1,6 @@
 # Minimal Petitions Application
 
-An application used to create petitions. 
+An application used to create petitions. This application is built upon a minimal mvc framework I built.
 
 Real time voting results using long polling.
 
@@ -24,9 +24,3 @@ define('DATABASE', 'petition');
 define('USER', 'database_user');
 define('PASSWORD', 'database_password');
 ```
-
-# TODO 
-
-Create a minimal mvc framework to setup the application on
-
-That will make setting up and extending the application much easier

@@ -1,7 +1,7 @@
 <?php
-
+define('TIMEZONE', 'Europe/London');
 define('DBMS', 'mysql');
-define('HOST', 'localhost');
+define('HOST', 'host');
 define('DATABASE', 'petition');
-define('USER', 'root');
-define('PASSWORD', null);
+define('USER', 'user');
+define('PASSWORD', 'password');

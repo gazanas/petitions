@@ -2,9 +2,6 @@
 
 RewriteEngine On
 
-RewriteCond %{QUERY_STRING} poll_id=([0-9]+) [NC]
-RewriteRule ^(.+) index.php?%1 [QSA,L]
-
-RewriteRule ^(.+) index.php [QSA,L]
+RewriteRule ^(.*)$ index.php?uri=/$1 [QSA,L]
 
 </IfModule>

@@ -2,20 +2,20 @@
 
 namespace App\Models;
 
-class Petitions 
+use App\Src\Model;
+
+class Petitions extends Model
 {
-    private $database;
     
-    public function __construct(\PDO $database)
+    public function getPetitions() : array
     {
-        $this->database = $database;
+        return $this->get('petitions', ['return' => ['id', 'title', 'image', 'summary'], 'options' => ['order' => 'id DESC']]);
     }
-    
     /**
      * Get the petition info from the database.
      * 
      * @return array
-     */
+     *
     public function getPetitions() : array
     {
         $statement = $this->database->prepare('SELECT id, title, image, summary FROM petitions ORDER BY id DESC');
@@ -26,7 +26,7 @@ class Petitions
         $statement = null;
         
         return (empty($result)) ? [] : $result;
-    }
+    }*/
     
     /**
      * Get one petitions info.
@@ -37,15 +37,7 @@ class Petitions
      */
     public function getPetition(int $id) : array
     {
-        $statement = $this->database->prepare('SELECT id, title, image, summary FROM petitions WHERE id = ?');
-        $statement->bindParam(1, $id, \PDO::PARAM_INT);
-        $statement->execute();
-        
-        $result = $statement->fetch(\PDO::FETCH_ASSOC);
-        
-        $statement = null;
-        
-        return (empty($result)) ? [] : $result;
+        return $this->get('petitions', ['return' => ['id', 'title', 'image', 'summary'], 'id' => $id])[0];
     }
     
     /**
@@ -58,15 +50,7 @@ class Petitions
      */
     public function createPetition(string $title, string $image, int $goal, string $summary) : void
     {
-        $statement = $this->database->prepare('INSERT INTO petitions(id, title, image, goal, summary, created_at) VALUES(null, ?, ?, ?, ?, null)');
-        $statement->bindParam(1, $title, \PDO::PARAM_STR);
-        $statement->bindParam(2, $image, \PDO::PARAM_STR);
-        $statement->bindParam(3, $goal, \PDO::PARAM_INT);
-        $statement->bindParam(4, $summary, \PDO::PARAM_STR);
-        
-        $statement->execute();
-        
-        $statement = null;
+        $this->insert('petitions', ['title' => $title, 'image' => $image, 'goal' => $goal, 'summary' => $summary]);
     }
     
     /**
@@ -78,13 +62,7 @@ class Petitions
      */
     public function getGoal(int $pid) : int
     {
-        $statement = $this->database->prepare('SELECT goal FROM petitions WHERE id = ?');
-        $statement->bindParam(1, $pid, \PDO::PARAM_INT);
-        $statement->execute();
+        return $this->get('petitions', ['return' => ['goal'], 'id' => $pid])[0]['goal'];
         
-        $result = $statement->fetch(\PDO::FETCH_ASSOC);
-        $statement = null;
-        
-        return $result['goal'];
     }
 }

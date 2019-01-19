@@ -2,15 +2,10 @@
 
 namespace App\Models;
 
-class Votes
+use App\Src\Model;
+
+class Votes extends Model
 {
-    
-    private $database;
-    
-    public function __construct(\PDO $database)
-    {
-        $this->database = $database;
-    }
     
     /**
      * Get the votes of a petition
@@ -21,14 +16,7 @@ class Votes
      */
     public function getVotes(int $pid) : array
     {
-        $statement = $this->database->prepare('SELECT name, country FROM votes WHERE pid = ?');
-        $statement->bindParam(1, $pid, \PDO::PARAM_INT);
-        $statement->execute();
-        
-        $result = $statement->fetchAll(\PDO::FETCH_ASSOC);
-        $statement = null;
-
-        return (empty($result)) ? [] : $result;
+        return $this->get('votes', ['return' => ['name', 'country'], 'pid' => $pid]);
     }
     
     /**
@@ -41,14 +29,7 @@ class Votes
      */
     public function vote(int $pid, string $name, string $email, string $country) : void
     {
-        $statement = $this->database->prepare('INSERT INTO votes(id, pid, name, email, country, created_at) VALUES(NULL, ?, ?, ?, ?, NULL)');
-        $statement->bindParam(1, $pid, \PDO::PARAM_INT);
-        $statement->bindParam(2, $name, \PDO::PARAM_STR);
-        $statement->bindParam(3, $email, \PDO::PARAM_STR);
-        $statement->bindParam(4, $country, \PDO::PARAM_STR);
-        
-        $statement->execute();
-        $statement = null;
+       $this->insert('votes', ['pid' => $pid, 'name' => $name, 'email' => $email, 'country' => $country]);
     }
     
     /**
@@ -61,13 +42,7 @@ class Votes
      */
     public function hasNewVotes(int $pid, string $created_at) : bool
     {
-        $statement = $this->database->prepare('SELECT * FROM votes WHERE pid = ? AND created_at > ?');
-        $statement->bindParam(1, $pid, \PDO::PARAM_INT);
-        $statement->bindParam(2, $created_at, \PDO::PARAM_STR);
-        $statement->execute();
-        $result = $statement->fetchAll(\PDO::FETCH_ASSOC);
-        
-        $statement = null;
+        $result = $this->get('votes', ['pid' => $pid, 'created_at' => $created_at]);
         
         return (empty($result)) ? false : true;
     }
@@ -81,15 +56,8 @@ class Votes
      */
     public function getLastVote(int $pid) : array
     {
-        $statement = $this->database->prepare('SELECT * FROM votes WHERE pid = ? ORDER BY created_at DESC LIMIT 1');
-        $statement->bindParam(1, $pid, \PDO::PARAM_INT);
-        $statement->execute();
-        
-        $result = $statement->fetch(\PDO::FETCH_ASSOC);
-        
-        $statement = null;
-        
-        return (empty($result)) ? [] : $result;
+        $result = $this->get('votes', ['pid' => $pid, 'options' => ['order' => 'created_at DESC', 'limit' => 1]]);
+        return (empty($result)) ? [] : $result[0];
         
     }
     
@@ -103,14 +71,7 @@ class Votes
      */
     public function isDuplicate(string $email, int $pid) : bool
     {
-        $statement = $this->database->prepare('SELECT * FROM votes WHERE pid = ? AND email = ?');
-        $statement->bindParam(1, $pid, \PDO::PARAM_INT);
-        $statement->bindParam(2, $email, \PDO::PARAM_STR);
-        $statement->execute();
-        
-        $result = $statement->fetch(\PDO::FETCH_ASSOC);
-        
-        $statement = null;
+        $result = $this->get('votes', ['pid' => $pid, 'email' => $email]);
         
         return (empty($result)) ? false : true;
     }

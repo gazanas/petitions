@@ -4,61 +4,48 @@ namespace App\Controllers;
 
 use App\Models\Petitions;
 use App\Models\Votes;
+use App\Src\BaseController;
 
 define('TIME_LIMIT', 20);
 
 class PetitionController extends BaseController
-{
-    protected $database;
-    protected $petition;
-    protected $pid;
-    
-    public function __construct(\PDO $database, int $pid)
+{   
+    public function show()
     {
-        $this->database = $database;
-        $this->pid = $pid;
-        $this->petition = new Petitions($this->database);
-        $this->votes = new Votes($this->database);
+        $this->render('petition.php');
     }
     
-    /**
-     * Handles the get request by the user.
-     *
-     * {@inheritDoc}
-     * @see \App\Controllers\BaseController::handleRequest()
-     */
-    public function handleGetRequest(string $action = null, array $input = []) : void
+    public function getPetition(int $pid)
     {
-        switch ($action)
-        {
-            case 'get_petition':
-                $this->toJSON($this->petition->getPetition($this->pid));
-                break;
-            case 'get_new_votes':
-                $this->awaitingVotes($this->pid);
-                break;
-            case 'get_votes':
-                $goalPerc = round((count($this->votes->getVotes($this->pid))/$this->petition->getGoal($this->pid))*100, 2);
-                $last = $this->votes->getLastVote($this->pid);
-                (empty($last)) ? $this->toJSON(['votes' => 0]) : $this->toJSON(['votes' => $goalPerc, 'last' => $last['name'], 'country' => $last['country']]);
-                break;
-            default:
-                $this->render(self::VIEW_ROOT.'petition.php');
-        }
+        $this->toJSON((new Petitions($this->database))->getPetition($pid));
+    }
+    
+    public function getNewVotes(int $pid)
+    {
+        $this->awaitingVotes((new Votes($this->database)), (new Petitions($this->database)), $pid);
+    }
+    
+    public function getVotes(int $pid)
+    {
+        $votes = (new Votes($this->database));
+        $goalPerc = round((count($votes->getVotes($pid))/(new Petitions($this->database))->getGoal($pid))*100, 2);
+        $last = $votes->getLastVote($pid);
+        (empty($last)) ? $this->toJSON(['votes' => 0]) : $this->toJSON(['votes' => $goalPerc, 'last' => $last['name'], 'country' => $last['country']]);
     }
     
     /**
      * Handles the post request by the user.
      *
-     * {@inheritDoc}
-     * @see \App\Controllers\BaseController::handleRequest()
      */
-    public function handlePostRequest(string $action = null, array $input = []) : void
+    public function vote(int $pid) : void
     {
-        if(!$this->validatePost($input))
+        $input = $this->request->all();
+        $votes = (new Votes($this->database));
+        
+        if(!$this->validatePost($votes, $input, $pid))
             return;
                 
-        $this->votes->vote($input['pid'], $input['name'], $input['email'], $input['country']);
+        $votes->vote($pid, $input['name'], $input['email'], $input['country']);
         $this->toJSON(['success' => true]);
     }
     
@@ -66,13 +53,13 @@ class PetitionController extends BaseController
      * Long petitioning new votes, waits and returns new votes if database status changes.
      * 
      */
-    public function awaitingVotes() : void
+    public function awaitingVotes(Votes $votes, Petitions $petition, int $pid) : void
     {
-        $last = $this->votes->getLastVote($this->pid);
+        $last = $votes->getLastVote($pid);
         $timestamp = (empty($last)) ? date('Y-m-d H:i:s') : $last['created_at'];
         $starting_point = time();
             
-        while (!$this->votes->hasNewVotes($this->pid, $timestamp))
+        while (!$votes->hasNewVotes($pid, $timestamp))
         {
             sleep(2);
             
@@ -83,8 +70,8 @@ class PetitionController extends BaseController
             } 
         }
         
-        $goalPerc = round((count($this->votes->getVotes($this->pid))/$this->petition->getGoal($this->pid))*100, 2);
-        $last = $this->votes->getLastVote($this->pid);
+        $goalPerc = round((count($votes->getVotes($pid))/$petition->getGoal($pid))*100, 2);
+        $last = $votes->getLastVote($pid);
         $this->toJSON(['votes' => $goalPerc, 'last' => $last['name'], 'country' => $last['country']]);
     }
     
@@ -111,7 +98,7 @@ class PetitionController extends BaseController
      *
      * @return bool
      */
-    public function validatePost(array $input) : bool
+    public function validatePost(Votes $votes, array $input, int $pid) : bool
     {
         $required = ['name', 'email', 'country'];
         if($this->isEmpty($required, $input))
@@ -121,7 +108,7 @@ class PetitionController extends BaseController
         {
             $this->invalidEmail();
             return false;
-        } else if ($this->votes->isDuplicate($input['email'], $input['pid']))
+        } else if ($votes->isDuplicate($input['email'], $pid))
         {
             $this->duplicateEmail();
             return false;

@@ -2,68 +2,103 @@
 
 namespace App\Src;
 
-use App\Controllers\IndexController;
-use App\Controllers\PetitionController;
-
 class Router 
 {
-    
-    private $database;
-
-    public function __construct() 
-    {
-        $this->database = (new Bootstrap)->getConnection();
-    }
+    private static $request;
+    private static $getRoutes = [];
+    private static $postRoutes = [];    
     
     /**
-     * Get action parameter from the uri.
-     * 
-     * @return mixed
+     * Register a new route
+     * When no method can be resolved from the call the __callStatic is called
+     *  
+     * @param string $request
+     * @param array $args
      */
-    public function actionURI()
+    public static function __callStatic(string $request, array $args) : void
     {
-        $uri = $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
-        $query = parse_url($uri, PHP_URL_PATH);
-        switch($query)
+        self::$request = new Request();
+        
+        list($route, $callback) = $args;
+        
+        if(!self::$request->isSupportedMethod(strtoupper($request)))
         {
-            case '':
-                $action = '';
-                break;
-            default:
-                $params = explode('/', $query);
-                $action = $params[count($params)-1];
+            header(self::$request->protocol().' 405 Method Not Allowed');
+            die();
         }
         
-        return $action;
+        self::${$request.'Routes'}['/'.trim($route, '/')] = $callback;
+        
+    } 
+    
+    /**
+     * Executes the router
+     * 
+     */
+    public static function execute() : void
+    {
+        if (self::$request->isMethod('get'))
+        {
+            $route = self::routeCallback(self::$getRoutes);
+            list($controller, $method) = explode('::', self::$getRoutes[$route]);
+        } else if (self::$request->isMethod('post'))
+        {
+            $route = self::routeCallback(self::$postRoutes);
+            list($controller, $method) = explode('::', self::$postRoutes[$route]);
+        } else 
+        {
+            header(self::$request->protocol().' 405 Method Not Allowed');
+            die();
+        }
+        
+        $resource = self::uriResource($route);
+        
+        $controller = 'App\\Controllers\\'.$controller;
+        $controller = new $controller(self::$request, $resource);
+        ($resource == null) ? $controller->$method() : $controller->$method($resource);
     }
     
     /**
-     * Check if parameter pid was passed to the query of the uri.
+     * Check if the requested uri exists in the routes
+     * If no route found throw 404 error
      * 
-     * @return bool
+     * @param array $routePool
+     * @return string
      */
-    public function requestedPetition() : bool
+    public static function routeCallback(array $routePool)
     {
-        if(isset(Request::getParameters()['pid']))
-            return true;
+        /**
+         * Check all registered routes if
+         * the request uri exists
+         */
+        foreach(array_keys($routePool) as $route)
+        {
+            /**
+             * If the route contains a resource (only supports integer resources for now)
+             * then replace it with the appropriated regex
+             */
+            $searchRoute = preg_replace('/\{(int)\}/', '\d+', $route);
+            
+            if(preg_match('#^'.$searchRoute.'$#', self::$request->uriPath()))   
+                return $route;
+        }
         
-        return false;
+        header(self::$request->protocol().' 404 Not Found');
+        die();
     }
     
     /**
-     * Route the request to the right controller.
-     * 
+     * Retrieve the uri path resource
+     *  
+     * @param string $route
+     * @return mixed
      */
-    public function route() : void
+    private static function uriResource(string $route)
     {
-        if ($this->requestedPetition())
-            $controller = new PetitionController($this->database, (int) Request::getParameters()['pid']);
-        else 
-            $controller = new IndexController($this->database);
+        $pathArray = explode('/', $route);
+        $index = array_search('{int}', $pathArray);
         
-        if (Request::isGet())
-            $controller->handleGetRequest($this->actionURI(), Request::getParameters());
-        else if (Request::isPost())
-            $controller->handlePostRequest($this->actionURI(), Request::getParameters());
+        return (int) explode('/', self::$request->uriPath())[$index];
     }
+   
 }

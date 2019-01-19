@@ -126,26 +126,12 @@
                             	,"Turkey","Turkmenistan","Turks &amp; Caicos","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","United States Minor Outlying Islands","Uruguay"
                             	,"Uzbekistan","Venezuela","Vietnam","Virgin Islands (US)","Yemen","Zambia","Zimbabwe"];
 
-        	var getUrlParameter = function getUrlParameter(sParam) {
-        	    var sPageURL = window.location.search.substring(1),
-        	        sURLVariables = sPageURL.split('&'),
-        	        sParameterName,
-        	        i;
-
-        	    for (i = 0; i < sURLVariables.length; i++) {
-        	        sParameterName = sURLVariables[i].split('=');
-
-        	        if (sParameterName[0] === sParam) {
-        	            return sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
-        	        }
-        	    }
-        	};
         
 			function waitingVotes() {
 				$.ajax({
-					url: '/get_new_votes',
+					url: '/get_new_votes/'+window.location.pathname.split('/').pop(),
 					type: 'GET',
-					data: {'pid': getUrlParameter('pid')},
+					data: {},
 					dataType: 'json',
 					success: function(data, status) {
 						if(data.timeout != true)
@@ -157,37 +143,42 @@
 						}
 						waitingVotes();
 					}
-					
 				});
 			}
 			
 			$(document).ready(function() {
 				$.ajax({
-					url: '/get_petition',
+					url: '/get_petition/'+window.location.pathname.split('/').pop(),
 					type: 'GET',
-					data: {'pid': getUrlParameter('pid')},
+					data: {},
 					dataType: 'json',
 					success: function(data, status) {
 						$('.image').html(`<img src='`+data.image+`' class='col-12' alt=''>`);
 						$('.summary p').html(data.summary);
+					}, error: function(xhr) {
+						alert(xhr.responseText);
 					}
 				});
 
 				
 				$.ajax({
-					url: '/get_votes',
+					url: '/get_votes/'+window.location.pathname.split('/').pop(),
 					type: 'GET',
-					data: {'pid': getUrlParameter('pid')},
+					data: {},
 					dataType: 'json',
 					success: function(data, status) {
-						if(data.timeout != true)
+						if(data.votes == 0)
+						{							
+							$('.progress-bar').css('width', data.votes+'%');
+    						$('.percentage').html(data.votes+'% to achieve goal');
+						} else 
 						{
-    						$('.progress-bar').css('width', data.votes+'%');
+							$('.progress-bar').css('width', data.votes+'%');
     						$('.percentage').html(data.votes+'% to achieve goal');
     						$('.last-vote').html(data.last);
     						$('.last-country').html(data.country);
 						}
-					}
+    				}
 				});
 
 				$.each(country_list, function(index, value) {
@@ -199,9 +190,9 @@
         
         	$('.vote').on('click', function() {
             	$.ajax({
-                	url: '/vote',
+                	url: '/vote/'+window.location.pathname.split('/').pop(),
                 	type: 'POST',
-                	data: {'pid': getUrlParameter('pid'), 'name': $('form #vote-name').val(), 'email': $('form #vote-email').val(), 'country': $('form #vote-country option:selected').val()},
+                	data: {'name': $('form #vote-name').val(), 'email': $('form #vote-email').val(), 'country': $('form #vote-country option:selected').val()},
 					dataType: 'json',
                 	success: function(data, status) {
                     	if(data.error == true) {
@@ -209,6 +200,8 @@
 							return;
                         }
                     	$('#voteModal').modal('toggle');
+                    }, error: function(xhr) {
+						alert(xhr.responseText);
                     }
             	});
         	});

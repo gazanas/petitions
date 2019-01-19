@@ -3,48 +3,36 @@
 namespace App\Controllers;
 
 use App\Models\Petitions;
+use App\Src\BaseController;
 
 class IndexController extends BaseController
 {
-    protected $database;
-    protected $petition;
-    
-    public function __construct(\PDO $database)
-    {
-        $this->database = $database;
-        $this->petition = new Petitions($this->database);
-    }
     
     /**
      * Handles the get request by the user.
      * 
-     * {@inheritDoc}
-     * @see \App\Controllers\BaseController::handleRequest()
      */
-    public function handleGetRequest(string $action = null, array $input = []) : void
+    public function show() : void
+    {   
+        $this->render('index.php');
+    }
+    
+    public function get() : void
     {
-        switch($action)
-        {
-            case 'get_petitions':
-                $this->toJSON($this->petition->getPetitions());
-                break;
-            default:
-                $this->render(self::VIEW_ROOT.'index.php');
-        }
+        $this->toJSON((new Petitions($this->database))->getPetitions());
     }
     
     /**
      * Handles the post request by the user.
      *
-     * {@inheritDoc}
-     * @see \App\Controllers\BaseController::handleRequest()
      */
-    public function handlePostRequest(string $action = null, array $input = []) : void
+    public function add() : void
     {
+        $input = $this->request->all();
         if(!$this->validatePost($input))
             return;
             
-        $this->petition->createPetition($input['title'], $input['image'], $input['goal'], $input['summary']);
+        (new Petitions($this->database))->createPetition($input['title'], $input['image'], $input['goal'], $input['summary']);
         $this->toJSON(['success' => true]);
     }
     
