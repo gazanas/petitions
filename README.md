@@ -18,6 +18,7 @@ Complete database credentials in file config.php.
 
 Example:
 ```
+define('TIMEZONE', 'Europe/London');
 define('DBMS', 'mysql');
 define('HOST', 'localhost');
 define('DATABASE', 'petition');
