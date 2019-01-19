@@ -24,3 +24,7 @@ define('DATABASE', 'petition');
 define('USER', 'database_user');
 define('PASSWORD', 'database_password');
 ```
+
+# TODO
+
+Database migrations system
