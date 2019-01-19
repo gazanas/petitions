@@ -7,26 +7,16 @@ use App\Src\Model;
 class Petitions extends Model
 {
     
-    public function getPetitions() : array
-    {
-        return $this->get('petitions', ['return' => ['id', 'title', 'image', 'summary'], 'options' => ['order' => 'id DESC']]);
-    }
     /**
      * Get the petition info from the database.
      * 
      * @return array
      *
+     */
     public function getPetitions() : array
     {
-        $statement = $this->database->prepare('SELECT id, title, image, summary FROM petitions ORDER BY id DESC');
-        $statement->execute();
-        
-        $result = $statement->fetchAll(\PDO::FETCH_ASSOC);
-
-        $statement = null;
-        
-        return (empty($result)) ? [] : $result;
-    }*/
+        return $this->get('petitions', ['return' => ['id', 'title', 'image', 'summary'], 'options' => ['order' => 'id DESC']]);
+    }
     
     /**
      * Get one petitions info.
