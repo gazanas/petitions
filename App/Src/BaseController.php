@@ -9,10 +9,10 @@ abstract class BaseController {
     protected $request;
     protected  $database;
     
-    public function __construct(RequestInterface $request, \PDO $database)
+    public function __construct(RequestInterface $request)
     {
         $this->request = $request;
-        $this->database = $database;
+        $this->database = (new Bootstrap())->getConnection();
     }
    
     /**
