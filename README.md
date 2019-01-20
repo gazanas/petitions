@@ -10,7 +10,7 @@ Create a database.
 
 Navigate to the directory of the app and execute on command line:
 
-mysql -u root -p (database_name) < petitions.mysql
+mysql -u <database_user> -p <database_password> <database_name> < petitions.mysql
 
 # Setup Application
 
