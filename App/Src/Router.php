@@ -54,7 +54,7 @@ class Router
         $resource = self::uriResource($route);
         
         $controller = 'App\\Controllers\\'.$controller;
-        $controller = new $controller(self::$request, $resource);
+        $controller = new $controller(self::$request);
         ($resource == null) ? $controller->$method() : $controller->$method($resource);
     }
     

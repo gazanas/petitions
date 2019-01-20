@@ -3,9 +3,9 @@
 namespace App\Tests;
 
 use App\Controllers\IndexController;
-use App\Src\Bootstrap;
 use App\Controllers\PetitionController;
 use App\Models\Votes;
+use App\Src\Request;
 
 class ControllerTest extends DatabaseTestCase
 {
@@ -14,7 +14,7 @@ class ControllerTest extends DatabaseTestCase
     
     public function setUp()
     {
-        $this->controller = new IndexController((new Bootstrap)->getConnection());
+        $this->request = $this->getMockBuilder(Request::class)->getMock();
         $this->database = $this->getDatabaseConnection();
         $this->createSchema($this->database);
         $this->populateSchema($this->database);
@@ -31,17 +31,17 @@ class ControllerTest extends DatabaseTestCase
         /**
          * Test if no input is given
          */
-        $this->assertTrue($this->controller->isEmpty(['title', 'goal', 'image', 'summary'], []));
+        $this->assertTrue((new IndexController($this->request, $this->database))->isEmpty(['title', 'goal', 'image', 'summary'], []));
         
         /**
          * Test if input is missing
          */
-        $this->assertTrue($this->controller->isEmpty(['title', 'goal', 'image', 'summary'], ['title' => 'Petition1', 'goal' => 150, 'summary' => 'Petition Summary']));
+        $this->assertTrue((new IndexController($this->request, $this->database))->isEmpty(['title', 'goal', 'image', 'summary'], ['title' => 'Petition1', 'goal' => 150, 'summary' => 'Petition Summary']));
         
         /**
          * Test if input is correct
          */
-        $this->assertFalse($this->controller->isEmpty(['title', 'goal', 'image', 'summary'], ['title' => 'Petition1', 'goal' => 150, 'image' => 'petition.jpg', 'summary' => 'Petition Summary']));
+        $this->assertFalse((new IndexController($this->request, $this->database))->isEmpty(['title', 'goal', 'image', 'summary'], ['title' => 'Petition1', 'goal' => 150, 'image' => 'petition.jpg', 'summary' => 'Petition Summary']));
     }
     
     public function testGetPetitions()
@@ -57,7 +57,7 @@ class ControllerTest extends DatabaseTestCase
         
         $this->expectOutputString($expected);
         
-        (new IndexController($this->database))->handleGetRequest('get_petitions');
+        (new IndexController($this->request, $this->database))->get();
     }
     
     public function testGetPetitionThatDoesntExist()
@@ -67,7 +67,7 @@ class ControllerTest extends DatabaseTestCase
         
         $this->expectOutputString($expected);
         
-        (new PetitionController($this->database, 2))->handleGetRequest('get_petition');
+        (new PetitionController($this->request, $this->database))->getPetition(2);
     }
     
     public function testGetOnePetition()
@@ -81,11 +81,13 @@ class ControllerTest extends DatabaseTestCase
         
         $this->expectOutputString($expected);
         
-        (new PetitionController($this->database, 1))->handleGetRequest('get_petition');
+        (new PetitionController($this->request, $this->database))->getPetition(1);
     }
     
     public function testCreateNewPetitionMissingAllInputsFails()
     {
+        $this->request->expects($this->any())->method('all')->willReturn([]);
+        
         /**
          * Missing all input fields fails
          */
@@ -96,28 +98,39 @@ class ControllerTest extends DatabaseTestCase
         ]);
                
         $this->expectOutputString($expected);
-        $this->assertNull((new IndexController($this->database))->handlePostRequest(null, []));
+        $this->assertNull((new IndexController($this->request, $this->database))->add());
         
     }
     
     public function testCreateNewPetitionMissingOneInputFails()
     {
+        $this->request->expects($this->any())->method('all')->willReturn(['id' => '1',
+                                                                        'image' => 'test.jpg',
+                                                                        'goal' => 150,
+                                                                        'summary' => 'test summary']);
+        
         /**
          * Missing one input field fails
          */
         $expected = json_encode([
             'error' => true,
-            'type' => 'image-error',
-            'message' => 'Please Complete Image'
+            'type' => 'title-error',
+            'message' => 'Please Complete Title'
         ]);
                 
         $this->expectOutputString($expected);
-        $this->assertNull((new IndexController($this->database))->handlePostRequest(null, ['title' => 'Test Poll 2', 'goal' => 150, 'summary' => 'test summary 2']));
+        $this->assertNull((new IndexController($this->request, $this->database))->add());
         
     }
     
     public function testCreateNewPetition()
     {  
+        $this->request->expects($this->any())->method('all')->willReturn(['id' => '1',
+                                                                        'title' => 'Test Poll',
+                                                                        'image' => 'test.jpg',
+                                                                        'goal' => 150,
+                                                                        'summary' => 'test summary']);
+        
         /**
          * Successful creation
          */
@@ -127,7 +140,7 @@ class ControllerTest extends DatabaseTestCase
         
         $this->expectOutputString($expected);
         
-        (new IndexController($this->database))->handlePostRequest(null, ['title' => 'Test Poll 2', 'image' => 'test.jpg', 'goal' => 150, 'summary' => 'test summary 2']);
+        (new IndexController($this->request, $this->database))->add();
     }
     
     /**
@@ -153,11 +166,12 @@ class ControllerTest extends DatabaseTestCase
                 
         $this->expectOutputString($expected);
         
-        (new PetitionController($this->database, 1))->handleGetRequest('get_votes');
+        (new PetitionController($this->request, $this->database))->getVotes(1);
     }
     
     public function testGetVotesOfPoll()
     {
+            
         $expected = json_encode([
             'votes' => round((1/150)*100, 2), 
             'last' => 'Test', 
@@ -168,11 +182,13 @@ class ControllerTest extends DatabaseTestCase
         
         $this->expectOutputString($expected);
         
-        (new PetitionController($this->database, 1))->handleGetRequest('get_votes');
+        (new PetitionController($this->request, $this->database))->getVotes(1);
     }
     
     public function testAddNewVoteMissingAllInputsFails()
     {
+        $this->request->expects($this->any())->method('all')->willReturn([]);
+        
         /**
          * Missing one input field fails
          */
@@ -183,12 +199,13 @@ class ControllerTest extends DatabaseTestCase
         ]);
         
         $this->expectOutputString($expected);
-        (new PetitionController($this->database, 1))->handlePostRequest(null, []);
+        (new PetitionController($this->request, $this->database))->vote(1);
         
     }
     
     public function testAddNewVoteMissingOneInputFails()
     {
+        $this->request->expects($this->any())->method('all')->willReturn(['pid' => 1, 'name' => 'Test', 'country' => 'United States']);
         /**
          * Missing one input field fails
          */
@@ -199,12 +216,13 @@ class ControllerTest extends DatabaseTestCase
         ]);
         
         $this->expectOutputString($expected);
-        (new PetitionController($this->database, 1))->handlePostRequest(null, ['pid' => 1, 'name' => 'Test', 'country' => 'United States']);
+        (new PetitionController($this->request, $this->database))->vote(1);
         
     }
     
     public function testAddNewVoteSuccess()
     {
+        $this->request->expects($this->any())->method('all')->willReturn(['pid' => 1, 'name' => 'Test', 'email' => 'test@example.com', 'country' => 'United States']);
         /**
          * Missing one input field fails
          */
@@ -213,6 +231,6 @@ class ControllerTest extends DatabaseTestCase
         ]);
         
         $this->expectOutputString($expected);
-        (new PetitionController($this->database, 1))->handlePostRequest(null, ['pid' => 1, 'name' => 'Test', 'email' => 'test@example.com', 'country' => 'United States']);
+        (new PetitionController($this->request, $this->database))->vote(1);
     }
 }

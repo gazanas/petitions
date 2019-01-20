@@ -6,10 +6,9 @@ use App\Src\Model;
 
 class Petitions extends Model
 {
-    
     /**
      * Get the petition info from the database.
-     * 
+     *
      * @return array
      *
      */
@@ -27,7 +26,9 @@ class Petitions extends Model
      */
     public function getPetition(int $id) : array
     {
-        return $this->get('petitions', ['return' => ['id', 'title', 'image', 'summary'], 'id' => $id])[0];
+        $result = $this->get('petitions', ['return' => ['id', 'title', 'image', 'summary'], 'id' => $id]);
+        
+        return (empty($result)) ? [] : $result[0];
     }
     
     /**

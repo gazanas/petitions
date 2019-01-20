@@ -6,13 +6,13 @@ define('VIEW_ROOT', dirname(__DIR__).'/Views/');
 
 abstract class BaseController {
         
-    protected $database;
     protected $request;
+    protected  $database;
     
-    public function __construct(RequestInterface $request)
+    public function __construct(RequestInterface $request, \PDO $database)
     {
-        $this->database = (new Bootstrap)->getConnection();
         $this->request = $request;
+        $this->database = $database;
     }
    
     /**
